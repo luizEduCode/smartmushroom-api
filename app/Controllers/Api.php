@@ -45,6 +45,28 @@ class Api extends ResourceController
         // Lógica para enviar comandos para a ESP32
     }
 
+    public function obterParametros()
+    {
+        // Defina os limites (você pode armazená-los no banco de dados se preferir)
+        $limites = [
+            'tempMin' => 20.0,
+            'tempMax' => 25.0,
+            'umidMin' => 70.0,
+            'umidMax' => 85.0,
+        ];
+
+        return $this->respond($limites);
+    }
+
+
+
+
+
+
+
+
+
+    //teste conexã com o banco
     public function testeConexaoBanco()
     {
         try {

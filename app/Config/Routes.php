@@ -16,5 +16,10 @@ $routes->post('api/comandos', 'Api::enviarComando');
 $routes->get('api/comandos', 'Api::listarComandos');
 
 
+// Rota para setar parâmetros
+$routes->get('api/limites', 'Api::obterParametros');
+
+
+
 //teste de conexão
 $routes->get('api/teste-conexao-banco', 'Api::testeConexaoBanco');
