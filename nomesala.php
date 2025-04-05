@@ -1,7 +1,7 @@
 <?php
 
 
-$pdo = new PDO('mysql:host=localhost;dbname=smartmushroom_db;port=3308', 'root', '');
+$pdo = new PDO('mysql:host=localhost;dbname=smartmushroom_db', 'root', '');
 
 if ($_SERVER['REQUEST_METHOD'] == 'GET') {
     $nomeSala = (isset($_GET['nomeSala'])) ? $_GET['nomeSala'] : '';

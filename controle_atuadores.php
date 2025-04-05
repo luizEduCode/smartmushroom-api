@@ -1,27 +1,10 @@
 <?php
-$pdo = new PDO('mysql:host=localhost;dbname=smartmushroom_db', 'root', '');
 
-$idSala = isset($_GET['idSala']) ? $_GET['idSala'] : '';
-
-$sql = "SELECT a.nomeAtuador, a.tipoAtuador, ca.statusAtuador
-        FROM atuador a
-        JOIN (
-            SELECT idAtuador, MAX(dataCriacao) AS dataCriacao
-            FROM controle_atuador
-            GROUP BY idAtuador
-        ) ult ON a.idAtuador = ult.idAtuador
-        JOIN controle_atuador ca ON ca.idAtuador = ult.idAtuador AND ca.dataCriacao = ult.dataCriacao
-        WHERE a.idSala = ?";
-
-$stmt = $pdo->prepare($sql);
-$stmt->execute([$idSala]);
-
-$resultado = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-echo json_encode(['atuadores' => $resultado]);
-
-
-
+$pdo = new PDO(
+    'mysql:host=localhost;dbname=smartmushroom_db', // Altere conforme necessário
+    'root',
+    ''
+);
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     parse_str(file_get_contents('php://input') ?? '', $_POST);

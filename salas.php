@@ -1,6 +1,6 @@
 <?php
 
-$pdo = new PDO('mysql:host=localhost;dbname=smartmushroom_db;port=3308', 'root', '');
+$pdo = new PDO('mysql:host=localhost;dbname=smartmushroom_db', 'root', '');
 
 if ($_SERVER['REQUEST_METHOD'] == 'GET'){
     $idSala = (isset($_GET['idSala'])) ? $_GET['idSala'] : '';
@@ -39,7 +39,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET'){
         SELECT MAX(dataMudanca)
         FROM historico_fase
         WHERE idLote = l.idLote
+        AND l.status = "ativo"
     )';
+
+    // AND l.status = "ativo" -- faz com que apenas as salas ativas sejam mostradas
 
     $stm = $pdo->prepare($sql);
     $stm->execute();
