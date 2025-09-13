@@ -54,14 +54,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET') {
     http_response_code(200);
 }
 
-if ($_SERVER['REQUEST_METHOD'] == 'POST'){
-
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 };
 
-if ($_SERVER['REQUEST_METHOD'] == 'PUT'){
-
+if ($_SERVER['REQUEST_METHOD'] == 'PUT') {
 };
 
-if ($_SERVER['REQUEST_METHOD'] == 'DELETE'){
-
+if ($_SERVER['REQUEST_METHOD'] == 'DELETE') {
 };
