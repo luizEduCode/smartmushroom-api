@@ -1,10 +1,8 @@
 <?php
-
-
 // TODO: Regra de negocio:
 /* 
 Ao criar um novo lote devemos criar também um novo histórico fase
-- Receber do fronte o tido de fase do lote a ser criado;
+- Receber do fronte o tipo de fase do lote a ser criado;
 - Acessar a Model de histórico_fase
 - Adicionar infomação de lote e fase_cultivo a historico_fase
 */
@@ -254,6 +252,30 @@ class LoteController
         $ok = $this->model->finalizar($id);
         if ($ok) {
             return $response->json(['message' => 'Lote finalizado com sucesso'], 200);
+        }
+
+        return $response->json(['message' => 'Lote já estava finalizado ou não pôde ser alterado'], 400);
+    }
+
+        function deletar_fisico(Request $request, Response $response, array $url)
+    {
+        if (!isset($url[0]) || !is_numeric($url[0])) {
+            return $response->json(['message' => 'Uso correto: DELETE /lote/{idLote}'], 400);
+        }
+
+        $id = (int)$url[0];
+        if ($id <= 0) {
+            return $response->json(['message' => 'ID inválido'], 400);
+        }
+
+        $lote = $this->model->selectId($id);
+        if ($lote === null) {
+            return $response->json(['message' => 'Lote não encontrado'], 404);
+        }
+
+        $ok = $this->model->finalizar_fisico($id);
+        if ($ok) {
+            return $response->json(['message' => 'Lote excluido com sucesso'], 200);
         }
 
         return $response->json(['message' => 'Lote já estava finalizado ou não pôde ser alterado'], 400);

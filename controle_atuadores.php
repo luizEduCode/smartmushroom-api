@@ -17,6 +17,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET') {
         exit;
     }
 
+    $idAtuador = (isset($_GET['idAtuador'])) ? $_GET['idAtuador'] : '';
+
+    if (empty($idAtuador)) {
+        echo json_encode(['mensagem' => 'ID da sala não informado'], JSON_UNESCAPED_UNICODE);
+        http_response_code(400); // Bad Request
+        exit;
+    }
+
     $sql = 'SELECT
                 a.idAtuador,
                 a.tipoAtuador,

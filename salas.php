@@ -6,41 +6,50 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET') {
     $idSala = (isset($_GET['idSala'])) ? $_GET['idSala'] : '';
 
     $sql = 'SELECT 
-        s.nomeSala, 
-        l.idLote, 
-        l.dataInicio, 
-        l.status AS status, 
-        c.nomeCogumelo, 
-        f.nomeFaseCultivo,
-        (
-            SELECT temperatura FROM leitura 
-            WHERE idLote = l.idLote 
-            ORDER BY dataCriacao DESC 
-            LIMIT 1
-        ) AS temperatura,
-        (
-            SELECT umidade FROM leitura 
-            WHERE idLote = l.idLote 
-            ORDER BY dataCriacao DESC 
-            LIMIT 1
-        ) AS umidade,
-        (
-            SELECT co2 FROM leitura 
-            WHERE idLote = l.idLote 
-            ORDER BY dataCriacao DESC 
-            LIMIT 1
-        ) AS co2
-    FROM sala s
-    JOIN lote l ON l.idSala = s.idSala
-    JOIN cogumelo c ON c.idCogumelo = l.idCogumelo
-    JOIN historico_fase hf ON hf.idLote = l.idLote
-    JOIN fase_cultivo f ON f.idFaseCultivo = hf.idFaseCultivo
-    WHERE hf.dataMudanca = (
+    s.idSala,
+    s.nomeSala, 
+    l.idLote, 
+    l.dataInicio, 
+    l.status AS status, 
+    c.nomeCogumelo, 
+    f.nomeFaseCultivo,
+    (
+        SELECT temperatura 
+        FROM leitura 
+        WHERE idLote = l.idLote 
+        ORDER BY dataCriacao DESC 
+        LIMIT 1
+    ) AS temperatura,
+    (
+        SELECT umidade 
+        FROM leitura 
+        WHERE idLote = l.idLote 
+        ORDER BY dataCriacao DESC 
+        LIMIT 1
+    ) AS umidade,
+    (
+        SELECT co2 
+        FROM leitura 
+        WHERE idLote = l.idLote 
+        ORDER BY dataCriacao DESC 
+        LIMIT 1
+    ) AS co2
+FROM sala s
+INNER JOIN lote l 
+    ON l.idSala = s.idSala 
+   AND l.status = 'ativo'
+LEFT JOIN cogumelo c 
+    ON c.idCogumelo = l.idCogumelo
+LEFT JOIN historico_fase hf 
+    ON hf.idLote = l.idLote
+   AND hf.dataMudanca = (
         SELECT MAX(dataMudanca)
         FROM historico_fase
         WHERE idLote = l.idLote
-        AND l.status = "ativo"
-    )';
+    )
+LEFT JOIN fase_cultivo f 
+    ON f.idFaseCultivo = hf.idFaseCultivo
+ORDER BY s.idSala, l.idLote;)';
 
     // AND l.status = "ativo" -- faz com que apenas as salas ativas sejam mostradas
 

@@ -130,5 +130,54 @@ class SalaController
         $response->json(['message' => 'Erro ao deletar sala'], 500);
     }
 
+    // No arquivo SalaController.php, adicione este método:
+
+function listarSalasComLotesAtivos(Request $request, Response $response, array $url)
+{
+    try {
+        $salas = $this->model->selectSalasComLotesAtivos();
+        
+        if (!empty($salas)) {
+            // Agrupar os resultados por sala para uma estrutura mais organizada
+            $salasAgrupadas = [];
+            foreach ($salas as $sala) {
+                $idSala = $sala['idSala'];
+                
+                if (!isset($salasAgrupadas[$idSala])) {
+                    $salasAgrupadas[$idSala] = [
+                        'idSala' => $sala['idSala'],
+                        'nomeSala' => $sala['nomeSala'],
+                        'lotes' => []
+                    ];
+                }
+                
+                // Adicionar lote apenas se tiver idLote (evita linhas vazias)
+                if (!empty($sala['idLote'])) {
+                    $salasAgrupadas[$idSala]['lotes'][] = [
+                        'idLote' => $sala['idLote'],
+                        'dataInicio' => $sala['dataInicio'],
+                        'status' => $sala['status'],
+                        'nomeCogumelo' => $sala['nomeCogumelo'],
+                        'nomeFaseCultivo' => $sala['nomeFaseCultivo'],
+                        'temperatura' => $sala['temperatura'],
+                        'umidade' => $sala['umidade'],
+                        'co2' => $sala['co2']
+                    ];
+                }
+            }
+            
+            // Converter array associativo para numérico
+            $resultado = array_values($salasAgrupadas);
+            
+            return $response->json(['salas' => $resultado], 200);
+        }
+        
+        return $response->json(['message' => 'Nenhuma sala com lotes ativos encontrada'], 404);
+        
+    } catch (Exception $e) {
+        return $response->json(['erro' => 'Erro ao buscar salas: ' . $e->getMessage()], 500);
+    }
+}
+
     
 }

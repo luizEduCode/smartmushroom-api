@@ -143,4 +143,19 @@ class LoteModel
         $st->execute([$idLote]);
         return ($st->rowCount() > 0);
     }
+
+public function finalizar_fisico(int $idLote): bool
+{
+    try {
+        $sql = "DELETE FROM lote WHERE idLote = ?";
+        $st = $this->conexao->prepare($sql);
+        $st->execute([$idLote]);
+        return ($st->rowCount() > 0);
+        
+    } catch (PDOException $e) {
+        // Log do erro (opcional)
+        error_log("Erro ao excluir lote {$idLote}: " . $e->getMessage());
+        throw $e; // Re-lança a exceção para tratamento na controller
+    }
+}
 }

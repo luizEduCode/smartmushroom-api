@@ -5,6 +5,7 @@ require_once 'Http.php';
 //sala
 Http::get('/sala/listarTodos',                                              'SalaController@listarTodos');
 Http::get('/sala/listarIdSala/{idSala}',                                    'SalaController@listarIdSala');
+Http::get('/sala/listarSalasComLotesAtivos',                                'SalaController@listarSalasComLotesAtivos');
 Http::post('/sala/adicionar',                                               'SalaController@adicionar');
 Http::put('/sala/alterar',                                                  'SalaController@alterar');
 Http::delete('/sala/deletar/{idLote}',                                      'SalaController@deletar');
@@ -35,6 +36,7 @@ Http::get('/lote/listarSalasDisponiveis',                                   'Lot
 Http::post('/lote/adicionar',                                               'LoteController@adicionar');
 Http::put('/lote/alterar',                                                  'LoteController@alterar');
 Http::delete('/lote/deletar/{idLote}',                                      'LoteController@deletar');
+Http::delete('/lote/deletar_fisico/{idLote}',                               'LoteController@deletar_fisico');
 
 
 //historico_fase

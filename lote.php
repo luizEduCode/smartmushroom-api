@@ -178,7 +178,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 }
 
 // Método DELETE - Alternativa para finalizar lote
-if ($_SERVER['REQUEST_METHOD'] == 'DELETE') {
+if ($_SERVER['REQUEST_METHOD'] == 'PUT') {
     try {
         $idLote = $_GET['idLote'] ?? '';
 
@@ -198,6 +198,30 @@ if ($_SERVER['REQUEST_METHOD'] == 'DELETE') {
         echo json_encode([
             'success' => false,
             'message' => 'Erro ao finalizar lote: ' . $e->getMessage()
+        ]);
+    }
+}
+
+if ($_SERVER['REQUEST_METHOD'] == 'DELETE') {
+    try {
+        $idLote = $_GET['idLote'] ?? '';
+
+        if (empty($idLote)) {
+            throw new Exception("ID do lote não fornecido");
+        }
+
+        $stmt = $pdo->prepare("DELETE from lote WHERE idLote = ?");
+        $stmt->execute([$idLote]);
+
+        echo json_encode([
+            'success' => true,
+            'message' => 'Lote excluido com sucesso'
+        ]);
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode([
+            'success' => false,
+            'message' => 'Erro ao excluir lote: ' . $e->getMessage()
         ]);
     }
 }
