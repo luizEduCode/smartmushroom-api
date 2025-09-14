@@ -9,18 +9,24 @@ Ao criar um novo lote devemos criar também um novo histórico fase
 require_once './model/LoteModel.php';
 require_once './model/SalaModel.php';
 require_once './model/CogumeloModel.php';
+require_once './model/FaseCultivoModel.php';
+require_once './model/HistoricoFaseModel.php';
 
 class LoteController
 {
     private $model;
     private $salaModel;
     private $cogModel;
+    private $faseCultivo;
+    private $historicoFase;
 
     public function __construct()
     {
         $this->model = new LoteModel();
         $this->salaModel = new SalaModel();
         $this->cogModel = new CogumeloModel();
+        $this->faseCultivo = new FaseCultivoModel();
+        $this->historicoFase = new HistoricoFaseModel();
     }
 
     function listarTodos(Request $request, Response $response, array $url)
@@ -87,6 +93,8 @@ class LoteController
         $dataInicio = $data['dataInicio']  ?? null; // 'YYYY-MM-DD'
         $dataFim    = $data['dataFim']     ?? null; // opcional
         $status     = $data['status']      ?? 'ativo';
+        $faseCultivo = $data['faseCultivo'] ?? null;
+        //TODO:Criar validação para Id Fase de Cultivo comparando se o tipo de cogumelo está correto.
 
         // default para hoje se não vier dataInicio 
         if ($dataInicio === null || $dataInicio === '') {
@@ -137,7 +145,22 @@ class LoteController
             return $response->json(['message' => 'A sala já possui um lote ativo'], 409);
         }
 
+        /* 
+        Ao criar um novo lote devemos criar também um novo histórico fase
+        - Receber do fronte o tipo de fase do lote a ser criado;
+        - Acessar a Model de histórico_fase
+        - Adicionar infomação de lote e fase_cultivo a historico_fase
+        */
+
         $novoId = $this->model->create($idSala, $idCogumelo, $dataInicio, $dataFim, $status);
+
+
+
+        if ($faseCultivo !== null) {
+            $this->historicoFase->create($novoId, $faseCultivo);
+        }
+
+
         if ($novoId > 0) {
             return $response->json([
                 'message' => 'Lote criado com sucesso',
