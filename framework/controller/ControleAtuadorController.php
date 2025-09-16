@@ -141,7 +141,95 @@ class ControleAtuadorController
         return $response->json(['message' => 'Erro ao adicionar controle de atuador'], 500);
     }
 
-    // Não há método 'alterar' conforme instrução em Routes.php
+// public function alterar(Request $request, Response $response, array $url) 
+// {
+//     // $request->body() já retorna array, então não precisa de json_decode
+//     $data = $request->body();
+
+//     if (empty($data) || !is_array($data)) {
+//         return $response->json(['message' => 'Body não recebido ou inválido'], 400);
+//     }
+
+//     $idAtuador     = $data['idAtuador'] ?? null;
+//     $statusAtuador = isset($data['statusAtuador']) ? strtolower(trim($data['statusAtuador'])) : null;
+
+//     if (!is_numeric($idAtuador) || (int)$idAtuador <= 0 || !self::validarStatusAtuador($statusAtuador)) {
+//         return $response->json([
+//             'message' => 'Parâmetros inválidos: idAtuador e statusAtuador (ativo|inativo) são obrigatórios'
+//         ], 400);
+//     }
+
+//     $idAtuador = (int)$idAtuador;
+
+//     if ($this->atuadorModel->selectIdAtuador($idAtuador) === null) {
+//         return $response->json(['message' => 'Atuador não encontrado'], 404);
+//     }
+
+//     $controles = $this->model->selectByIdAtuador($idAtuador);
+//     if (empty($controles)) {
+//         return $response->json(['message' => 'Controle de Atuador não encontrado para este atuador'], 404);
+//     }
+
+//     $ok = $this->model->updateStatusByAtuador($idAtuador, $statusAtuador);
+
+//     if ($ok) {
+//         $atualizados = $this->model->selectByIdAtuador($idAtuador);
+//         return $response->json([
+//             'message' => 'Status do atuador atualizado',
+//             'controles' => $atualizados
+//         ], 200);
+//     }
+
+//     return $response->json(['message' => 'Erro ao atualizar status do atuador'], 500);
+// }
+
+public function alterar(Request $request, Response $response, array $url) 
+{
+    // Lê o JSON cru do POST
+    $json = file_get_contents('php://input');
+
+    if (empty($json)) {
+        return $response->json(['message' => 'Body não recebido'], 400);
+    }
+
+    $data = json_decode($json, true); // true retorna array associativo
+
+    if (empty($data)) {
+        return $response->json(['message' => 'Body não recebido ou JSON inválido'], 400);
+    }
+
+    $idAtuador     = $data['idAtuador'] ?? null;
+    $statusAtuador = isset($data['statusAtuador']) ? strtolower(trim($data['statusAtuador'])) : null;
+
+    if (!is_numeric($idAtuador) || (int)$idAtuador <= 0 || !self::validarStatusAtuador($statusAtuador)) {
+        return $response->json(['message' => 'Parâmetros inválidos: idAtuador e statusAtuador (ativo|inativo) são obrigatórios'], 400);
+    }
+
+    // Verifica se o atuador existe
+    if ($this->atuadorModel->selectIdAtuador((int)$idAtuador) === null) {
+        return $response->json(['message' => 'Atuador não encontrado'], 404);
+    }
+
+    // Verifica se há pelo menos um controle para esse atuador
+    $controles = $this->model->selectByIdAtuador((int)$idAtuador);
+    if (empty($controles)) {
+        return $response->json(['message' => 'Controle de Atuador não encontrado para este atuador'], 404);
+    }
+
+    // Atualiza o status
+    $ok = $this->model->updateStatusByAtuador((int)$idAtuador, $statusAtuador);
+
+    if ($ok) {
+        $atualizados = $this->model->selectByIdAtuador((int)$idAtuador);
+        return $response->json(['message' => 'Status do atuador atualizado', 'controles' => $atualizados], 200);
+    }
+
+    return $response->json(['message' => 'Erro ao atualizar status do atuador'], 500);
+}
+
+
+
+
 
     /**
      * Realiza a exclusão LÓGICA de um controle de atuador, setando seu status para 'inativo'.
@@ -221,8 +309,11 @@ class ControleAtuadorController
 
     /* ===================== helpers ===================== */
 
-    private static function validarStatusAtuador(string $status): bool
-    {
-        return in_array($status, ['ativo', 'inativo'], true);
+private static function validarStatusAtuador(?string $status): bool
+{
+    if (!is_string($status) || $status === '') {
+        return false;
     }
+    return in_array($status, ['ativo', 'inativo'], true);
+}
 }

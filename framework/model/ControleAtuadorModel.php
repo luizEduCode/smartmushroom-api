@@ -75,6 +75,31 @@ class ControleAtuadorModel
         return ($stmt->rowCount() > 0) ? (int)$this->conexao->lastInsertId() : 0;
     }
 
+        /**
+     * Atualiza todos os registros do atuador definindo o status informado.
+     * Filtra por sala via JOIN com a tabela lote (ca.idLote = l.idLote).
+     * Ex: UPDATE controle_atuador ca
+     *        JOIN lote l ON ca.idLote = l.idLote
+     *      SET ca.statusAtuador = ?
+     *      WHERE ca.idAtuador = ? AND l.idSala = ?
+     */
+    public function updateStatusByAtuador(int $idAtuador, string $statusAtuador): bool
+    {
+        $sql = 'UPDATE controle_atuador SET statusAtuador = ?
+                 WHERE idAtuador = ?';
+        $st = $this->conexao->prepare($sql);
+        $st->execute([$statusAtuador, $idAtuador]);
+        return ($st->rowCount() > 0);
+    }
+
+    /**
+     * Mesma semântica de updateStatusByAtuador — compatibilidade com controller.
+     */
+    public function updateStatus(int $idAtuador, string $statusAtuador): bool
+    {
+        return $this->updateStatusByAtuador($idAtuador, $statusAtuador);
+    }
+
     /**
      * Exclusão lógica: atualiza o status para 'inativo'.
      */

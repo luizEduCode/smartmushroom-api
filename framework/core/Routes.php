@@ -75,7 +75,7 @@ Http::get('/atuador/listarTodos',                                           'Atu
 Http::get('/atuador/listarIdAtuador/{idAtuador}',                           'AtuadorController@listarIdAtuador');
 Http::get('/atuador/listarIdSala/{idSala}',                                 'AtuadorController@listarIdSala');
 Http::post('/atuador/adicionar',                                            'AtuadorController@adicionar');
-Http::put('/atuador/alterar',                                               'AtuadorController@alterar');
+Http::post('/atuador/alterar',                                               'AtuadorController@alterar');
 Http::delete('/atuador/deletar/{idAtuador}',                                'AtuadorController@deletar');
 
 
@@ -85,6 +85,7 @@ Http::get('/controleAtuador/listarIdControle/{idControle}',                 'Con
 Http::get('/controleAtuador/listarIdAtuador/{idAtuador}',                   'ControleAtuadorController@listarIdAtuador');
 Http::get('/controleAtuador/listarIdLote/{idLote}',                         'ControleAtuadorController@listarIdLote');
 Http::post('/controleAtuador/adicionar',                                    'ControleAtuadorController@adicionar');
+Http::post('/controleAtuador/alterar',                                    'ControleAtuadorController@alterar');
 //controle_atuador nao precisa de update
 Http::delete('/controleAtuador/deletar/{idControle}',                       'ControleAtuadorController@deletarLogico');
 Http::delete('/controleAtuador/deletarFisico/{idControle}',                 'ControleAtuadorController@deletarFisico');
