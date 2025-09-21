@@ -64,6 +64,7 @@ Http::get('/parametros/listarTodos',                                        'Par
 Http::get('/parametros/listarIdParametro/{idParametro}',                    'ParametroController@listarIdParametro');
 Http::get('/parametros/listarIdLote/{idLote}',                              'ParametroController@listarIdLote');
 Http::post('/parametros/adicionar',                                         'ParametroController@adicionar');
+Http::put('/parametros/alterar',                                            'ParametroController@alterar');
 //parametro nao precisa de update
 Http::delete('/parametros/deletar/{idParametro}',                           'ParametroController@deletar');
 

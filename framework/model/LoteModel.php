@@ -106,19 +106,77 @@ class LoteModel
         return $st->fetchAll(PDO::FETCH_ASSOC) ?: [];
     }
 
+    public function create(
+    int $idSala, 
+    int $idCogumelo, 
+    string $dataInicio, 
+    ?string $dataFim, 
+    string $status, 
+    int $idFaseCultivo
+): int {
+    try {
+        $this->conexao->beginTransaction();
 
-    public function create(int $idSala, int $idCogumelo, string $dataInicio, ?string $dataFim, string $status): int
-    {
+        // 1. Criar lote
         $sql = 'INSERT INTO lote (idSala, idCogumelo, dataInicio, dataFim, status)
                 VALUES (?, ?, ?, ?, ?)';
         $stmt = $this->conexao->prepare($sql);
         $stmt->execute([$idSala, $idCogumelo, $dataInicio, $dataFim, $status]);
 
-        if ($stmt->rowCount() > 0) {
-            return (int)$this->conexao->lastInsertId();
+        $idLote = (int)$this->conexao->lastInsertId();
+
+        if ($idLote <= 0) {
+            $this->conexao->rollBack();
+            return 0;
         }
-        return 0;
+
+        // 2. Buscar parâmetros da fase de cultivo
+        $sqlFase = 'SELECT 
+                        temperaturaMin, 
+                        temperaturaMax, 
+                        umidadeMin, 
+                        umidadeMax, 
+                        co2Max
+                    FROM fase_cultivo 
+                    WHERE idFaseCultivo = ?';
+        $stmtFase = $this->conexao->prepare($sqlFase);
+        $stmtFase->execute([$idFaseCultivo]);
+        $fase = $stmtFase->fetch(PDO::FETCH_ASSOC);
+
+        if (!$fase) {
+            $this->conexao->rollBack();
+            return 0;
+        }
+
+        // 3. Inserir configuração vinculada ao lote
+        $sqlConfig = 'INSERT INTO configuracao 
+                        (idLote, temperaturaMin, temperaturaMax, umidadeMin, umidadeMax, co2Max) 
+                      VALUES (?, ?, ?, ?, ?, ?)';
+        $stmtConfig = $this->conexao->prepare($sqlConfig);
+        $stmtConfig->execute([
+            $idLote,
+            $fase['temperaturaMin'],
+            $fase['temperaturaMax'],
+            $fase['umidadeMin'],
+            $fase['umidadeMax'],
+            $fase['co2Max']
+        ]);
+
+        // 4. Registrar fase inicial no histórico
+        $sqlHist = 'INSERT INTO historico_fase (idLote, idFaseCultivo) VALUES (?, ?)';
+        $stmtHist = $this->conexao->prepare($sqlHist);
+        $stmtHist->execute([$idLote, $idFaseCultivo]);
+
+        $this->conexao->commit();
+
+        return $idLote;
+
+    } catch (\Exception $e) {
+        $this->conexao->rollBack();
+        throw $e;
     }
+}
+
 
     public function update(int $idLote, int $idSala, int $idCogumelo, string $dataInicio, ?string $dataFim, string $status): bool
     {

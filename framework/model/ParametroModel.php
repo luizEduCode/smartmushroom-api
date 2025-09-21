@@ -34,7 +34,7 @@ class ParametroModel
 
     public function selectByIdParametro(int $id): ?array
     {
-        $sql = $this->baseSelect() . " WHERE idConfig = ? LIMIT 1";
+        $sql = $this->baseSelect() . " WHERE idLote = ? ORDER BY idConfig DESC LIMIT 1";
         $stmt = $this->conexao->prepare($sql);
         $stmt->execute([$id]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -68,23 +68,10 @@ class ParametroModel
         return $stmt->rowCount() > 0 ? (int)$this->conexao->lastInsertId() : 0;
     }
 
-    public function update(
-        int $idConfig,
-        int $idLote,
-        float $uMin,
-        float $uMax,
-        float $tMin,
-        float $tMax,
-        float $co2Max
-    ): bool {
-        $sql = "UPDATE configuracao
-                   SET idLote = ?, umidadeMin = ?, umidadeMax = ?, 
-                       temperaturaMin = ?, temperaturaMax = ?, co2Max = ?
-                 WHERE idConfig = ?";
-        $stmt = $this->conexao->prepare($sql);
-        $stmt->execute([$idLote, $uMin, $uMax, $tMin, $tMax, $co2Max, $idConfig]);
-        return $stmt->rowCount() > 0;
-    }
+    // public function update(
+    // ): bool
+    // {
+    // }
 
     public function delete(int $idConfig): bool
     {

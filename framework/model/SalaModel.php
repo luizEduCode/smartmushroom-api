@@ -66,8 +66,10 @@ public function selectSalasComLotesAtivos()
     s.nomeSala, 
     l.idLote, 
     l.dataInicio, 
-    l.status AS status, 
-    c.nomeCogumelo, 
+    l.status AS status,
+    c.idCogumelo, 
+    c.nomeCogumelo,
+    f. idFaseCultivo, 
     f.nomeFaseCultivo,
     (
         SELECT temperatura 

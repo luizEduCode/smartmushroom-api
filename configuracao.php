@@ -1,72 +1,6 @@
 <?php
 
-// header("Access-Control-Allow-Origin: *");
-// header("Content-Type: application/json; charset=UTF-8");
-// header("Access-Control-Allow-Methods: GET, PUT");
-
-// Conexão com tratamento de erros
-
 $pdo = new PDO('mysql:host=localhost:3306;dbname=smartmushroom_db', 'root', '');
-
-
-// GET - Buscar configurações
-if ($_SERVER['REQUEST_METHOD'] == 'GET') {
-    if (!isset($_GET['idLote'])) {
-        http_response_code(400);
-        echo json_encode(["error" => "Parâmetro 'idLote' obrigatório"]);
-        exit;
-    }
-
-    $idLote = $_GET['idLote'];
-
-    try {
-        $stmt = $pdo->prepare("
-            SELECT 
-                c.temperaturaMin, 
-                c.temperaturaMax, 
-                c.umidadeMin, 
-                c.umidadeMax, 
-                c.co2Max,
-                l.idSala
-            FROM configuracao c
-            JOIN lote l ON c.idLote = l.idLote
-            WHERE c.idLote = ? 
-            ORDER BY c.idConfig DESC 
-            LIMIT 1
-        ");
-        $stmt->execute([$idLote]);
-        $config = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        if ($config) {
-            echo json_encode([
-                "configuracao" => $config,
-                "idSala" => $config['idSala'] // Inclui o idSala na resposta
-            ]);
-        } else {
-            // Se não encontrar configuração, busca apenas o idSala do lote
-            $stmt = $pdo->prepare("
-                SELECT idSala FROM lote WHERE idLote = ? LIMIT 1
-            ");
-            $stmt->execute([$idLote]);
-            $lote = $stmt->fetch(PDO::FETCH_ASSOC);
-
-            if ($lote) {
-                http_response_code(404);
-                echo json_encode([
-                    "error" => "Configuração não encontrada",
-                    "idSala" => $lote['idSala']
-                ]);
-            } else {
-                http_response_code(404);
-                echo json_encode(["error" => "Lote não encontrado"]);
-            }
-        }
-    } catch (PDOException $e) {
-        http_response_code(500);
-        echo json_encode(["error" => "Erro no servidor: " . $e->getMessage()]);
-    }
-    exit;
-}
 
 // PUT - Atualizar configurações
 if ($_SERVER['REQUEST_METHOD'] == 'PUT') {
@@ -96,11 +30,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'PUT') {
         ");
         $stmt->execute([
             $data['idLote'],
-            $data['temperaturaMin'] ?? 22, // Valores padrão
-            $data['temperaturaMax'] ?? 26,
-            $data['umidadeMin'] ?? 65,
-            $data['umidadeMax'] ?? 75,
-            $data['co2Max'] ?? 1500
+            $data['temperaturaMin'], // Valores padrão
+            $data['temperaturaMax'],
+            $data['umidadeMin'],
+            $data['umidadeMax'],
+            $data['co2Max']
         ]);
 
         //var_dump($data);
@@ -117,8 +51,3 @@ if ($_SERVER['REQUEST_METHOD'] == 'PUT') {
     }
     exit;
 }
-
-
-// Método não suportado
-http_response_code(405);
-echo json_encode(["error" => "Método não permitido"]);

@@ -108,73 +108,10 @@ class ParametroController
         return $response->json(['message' => 'Erro ao adicionar parâmetros'], 500);
     }
 
-
-    /* ====================  NÃO PRECISAMOD DO ALTERAR PARA PARAMETROS======================= */
-
-    // public function alterar(Request $request, Response $response, array $url)
+    // public function alterar($request, $response, $url)
     // {
-    //     $data = $request->body();
-    //     if (empty($data)) {
-    //         return $response->json(['message' => 'Body não recebido'], 400);
-    //     }
-
-    //     $idConfig = $data['idParametro'] ?? $data['idConfig'] ?? null;
-    //     $idLote = $data['idLote'] ?? null;
-    //     $uMin = $data['umidadeMin'] ?? null;
-    //     $uMax = $data['umidadeMax'] ?? null;
-    //     $tMin = $data['temperaturaMin'] ?? null;
-    //     $tMax = $data['temperaturaMax'] ?? null;
-    //     $co2Max = $data['co2Max'] ?? null;
-
-    //     if (
-    //         !is_numeric($idConfig) || (int)$idConfig <= 0 ||
-    //         !is_numeric($idLote)  || (int)$idLote <= 0 ||
-    //         !is_numeric($uMin) || !is_numeric($uMax) ||
-    //         !is_numeric($tMin) || !is_numeric($tMax) ||
-    //         !is_numeric($co2Max)
-    //     ) {
-    //         return $response->json(['message' => 'Campos inválidos: idParametro, idLote, umidadeMin/Max, temperaturaMin/Max e co2Max '], 400);
-    //     }
-
-    //     $existente = $this->model->selectByIdParametro((int)$idConfig);
-    //     if ($existente === null) {
-    //         return $response->json(['message' => 'Parâmetro não encontrado'], 404);
-    //     }
-
-    //     // Valida lote e bloqueia se finalizado
-    //     $lote = $this->loteModel->selectId((int)$idLote);
-    //     if ($lote === null) {
-    //         return $response->json(['message' => 'Lote não encontrado'], 404);
-    //     }
-    //     $statusLote = strtolower(trim($lote['status'] ?? ''));
-    //     $dataFim    = $lote['dataFim'] ?? null;
-    //     if ($statusLote === 'finalizado' || ($dataFim !== null && $dataFim !== '')) {
-    //         return $response->json(['message' => 'Lote finalizado: não é permitido alterar parâmetros'], 409);
-    //     }
-
-    //     $ok = $this->model->update(
-    //         (int)$idConfig,
-    //         (int)$idLote,
-    //         (float)$uMin,
-    //         (float)$uMax,
-    //         (float)$tMin,
-    //         (float)$tMax,
-    //         (float)$co2Max,
-    //     );
-
-    //     if ($ok) {
-    //         $updated = $this->model->selectByIdParametro((int)$idConfig);
-    //         return $response->json([
-    //             'message' => 'Parâmetros alterados com sucesso',
-    //             'parametro' => $updated
-    //         ], 200);
-    //     }
-
-    //     return $response->json(['message' => 'Nenhuma alteração realizada'], 200);
     // }
-
     
-
     public function deletar(Request $request, Response $response, array $url)
     {
         if (!isset($url[0]) || !is_numeric($url[0])) {

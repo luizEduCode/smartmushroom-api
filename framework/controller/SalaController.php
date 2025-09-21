@@ -132,7 +132,7 @@ class SalaController
 
     // No arquivo SalaController.php, adicione este método:
 
-function listarSalasComLotesAtivos(Request $request, Response $response, array $url)
+function listarSalasComLotesAtivos(Request $request, Response $response, array $url) 
 {
     try {
         $salas = $this->model->selectSalasComLotesAtivos();
@@ -145,23 +145,25 @@ function listarSalasComLotesAtivos(Request $request, Response $response, array $
                 
                 if (!isset($salasAgrupadas[$idSala])) {
                     $salasAgrupadas[$idSala] = [
-                        'idSala' => $sala['idSala'],
+                        'idSala'   => $sala['idSala'],
                         'nomeSala' => $sala['nomeSala'],
-                        'lotes' => []
+                        'lotes'    => []
                     ];
                 }
                 
                 // Adicionar lote apenas se tiver idLote (evita linhas vazias)
                 if (!empty($sala['idLote'])) {
                     $salasAgrupadas[$idSala]['lotes'][] = [
-                        'idLote' => $sala['idLote'],
-                        'dataInicio' => $sala['dataInicio'],
-                        'status' => $sala['status'],
-                        'nomeCogumelo' => $sala['nomeCogumelo'],
-                        'nomeFaseCultivo' => $sala['nomeFaseCultivo'],
-                        'temperatura' => $sala['temperatura'],
-                        'umidade' => $sala['umidade'],
-                        'co2' => $sala['co2']
+                        'idLote'         => $sala['idLote'],
+                        'dataInicio'     => $sala['dataInicio'],
+                        'status'         => $sala['status'],
+                        'idCogumelo'     => $sala['idCogumelo'],   // 🔹 agora aparece
+                        'nomeCogumelo'   => $sala['nomeCogumelo'],
+                        'idFaseCultivo'   => $sala['idFaseCultivo'],
+                        'nomeFaseCultivo'=> $sala['nomeFaseCultivo'],
+                        'temperatura'    => $sala['temperatura'],
+                        'umidade'        => $sala['umidade'],
+                        'co2'            => $sala['co2']
                     ];
                 }
             }
@@ -178,6 +180,7 @@ function listarSalasComLotesAtivos(Request $request, Response $response, array $
         return $response->json(['erro' => 'Erro ao buscar salas: ' . $e->getMessage()], 500);
     }
 }
+
 
     
 }
