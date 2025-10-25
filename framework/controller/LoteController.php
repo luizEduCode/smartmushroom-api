@@ -11,6 +11,7 @@ require_once './model/SalaModel.php';
 require_once './model/CogumeloModel.php';
 require_once './model/FaseCultivoModel.php';
 require_once './model/HistoricoFaseModel.php';
+require_once './model/ParametroModel.php';
 
 class LoteController
 {
@@ -18,6 +19,7 @@ class LoteController
     private $salaModel;
     private $cogModel;
     private $faseCultivo;
+    private $parametroModel;
     private $historicoFase;
 
     public function __construct()
@@ -26,6 +28,7 @@ class LoteController
         $this->salaModel = new SalaModel();
         $this->cogModel = new CogumeloModel();
         $this->faseCultivo = new FaseCultivoModel();
+        $this->parametroModel = new ParametroModel();
         $this->historicoFase = new HistoricoFaseModel();
     }
 
@@ -81,80 +84,124 @@ class LoteController
         return $response->json(['message' => 'Lote não encontrado'], 404);
     }
 
-function adicionar(Request $request, Response $response, array $url)
-{
-    $data = $request->body();
-    if (empty($data)) {
-        return $response->json(['message' => 'Body não recebido'], 400);
+    function listarIdSala(Request $request, Response $response, array $url)
+    {
+        if (!isset($url[0])) {
+            return $response->json(['message' => 'Uso correto: GET /lote/listarIdSala/{idSala}'], 400);
+        }
+        if (!is_numeric($url[0])) {
+            return $response->json(['message' => 'ID da sala deve ser numérico'], 400);
+        }
+
+        $id = (int)$url[0];
+        if ($id <= 0) {
+            return $response->json(['message' => 'ID da sala inválido'], 400);
+        }
+
+        $lote = $this->model->selectLotePorSala($id);
+        if ($lote !== null) {
+            return $response->json($lote, 200);
+        }
+        return $response->json(['message' => 'Nenhum lote encontrado para esta sala'], 200);
     }
 
-    $idSala      = $data['idSala']      ?? null;
-    $idCogumelo  = $data['idCogumelo']  ?? null;
-    $dataInicio  = $data['dataInicio']  ?? null;
-    $dataFim     = $data['dataFim']     ?? null;
-    $status      = $data['status']      ?? 'ativo';
-    $faseCultivo = $data['faseCultivo'] ?? null;
+    function adicionar(Request $request, Response $response, array $url)
+    {
+        $data = $request->body();
+        if (empty($data)) {
+            return $response->json(['message' => 'Body não recebido'], 400);
+        }
 
-    // default para hoje se não vier dataInicio 
-    if ($dataInicio === null || $dataInicio === '') {
-        $dataInicio = (new DateTime('now', new DateTimeZone('America/Sao_Paulo')))->format('Y-m-d');
-    }
+        $idSala      = $data['idSala']      ?? null;
+        $idCogumelo  = $data['idCogumelo']  ?? null;
+        $dataInicio  = $data['dataInicio']  ?? null;
+        $dataFim     = $data['dataFim']     ?? null;
+        $status      = $data['status']      ?? 'ativo';
+        $faseCultivo = $data['faseCultivo'] ?? null;
 
-    // validações
-    if (
-        !is_numeric($idSala) || (int)$idSala <= 0 ||
-        !is_numeric($idCogumelo) || (int)$idCogumelo <= 0 ||
-        !is_string($dataInicio) || $dataInicio === ''
-    ) {
-        return $response->json(['message' => 'idSala, idCogumelo e dataInicio são obrigatórios e válidos'], 400);
-    }
+        // default para hoje se não vier dataInicio 
+        if ($dataInicio === null || $dataInicio === '') {
+            $dataInicio = (new DateTime('now', new DateTimeZone('America/Sao_Paulo')))->format('Y-m-d');
+        }
 
-    if ($this->salaModel->selectId((int)$idSala) === null) {
-        return $response->json(['message' => 'Sala não encontrada'], 404);
-    }
-    if ($this->cogModel->selectId((int)$idCogumelo) === null) {
-        return $response->json(['message' => 'Cogumelo não encontrado'], 404);
-    }
+        // validações
+        if (
+            !is_numeric($idSala) || (int)$idSala <= 0 ||
+            !is_numeric($idCogumelo) || (int)$idCogumelo <= 0 ||
+            !is_string($dataInicio) || $dataInicio === ''
+        ) {
+            return $response->json(['message' => 'idSala, idCogumelo e dataInicio são obrigatórios e válidos'], 400);
+        }
 
-    $idSala     = (int)$idSala;
-    $idCogumelo = (int)$idCogumelo;
-    $status     = strtolower(trim($status));
+        if ($this->salaModel->selectId((int)$idSala) === null) {
+            return $response->json(['message' => 'Sala não encontrada'], 404);
+        }
+        if ($this->cogModel->selectId((int)$idCogumelo) === null) {
+            return $response->json(['message' => 'Cogumelo não encontrado'], 404);
+        }
 
-    if (!self::validarStatus($status)) {
-        return $response->json(['message' => "Status inválido. Use 'ativo' ou 'finalizado'"], 400);
-    }
-    if (!self::isValidDate($dataInicio)) {
-        return $response->json(['message' => 'dataInicio inválida (esperado YYYY-MM-DD)'], 400);
-    }
-    if ($dataFim !== null && $dataFim !== '' && !self::isValidDate($dataFim)) {
-        return $response->json(['message' => 'dataFim inválida (esperado YYYY-MM-DD)'], 400);
-    }
-    if (!self::validarDatas($dataInicio, $dataFim)) {
-        return $response->json(['message' => 'dataFim deve ser igual ou posterior a dataInicio'], 400);
-    }
+        $idSala     = (int)$idSala;
+        $idCogumelo = (int)$idCogumelo;
+        $status     = strtolower(trim($status));
 
-    $dataFim = ($dataFim === '' ? null : $dataFim);
+        if (!self::validarStatus($status)) {
+            return $response->json(['message' => "Status inválido. Use 'ativo' ou 'finalizado'"], 400);
+        }
+        if (!self::isValidDate($dataInicio)) {
+            return $response->json(['message' => 'dataInicio inválida (esperado YYYY-MM-DD)'], 400);
+        }
+        if ($dataFim !== null && $dataFim !== '' && !self::isValidDate($dataFim)) {
+            return $response->json(['message' => 'dataFim inválida (esperado YYYY-MM-DD)'], 400);
+        }
+        if (!self::validarDatas($dataInicio, $dataFim)) {
+            return $response->json(['message' => 'dataFim deve ser igual ou posterior a dataInicio'], 400);
+        }
 
-    if ($this->model->salaOcupada($idSala)) {
-        return $response->json(['message' => 'A sala já possui um lote ativo'], 409);
+        $dataFim = ($dataFim === '' ? null : $dataFim);
+
+        if ($this->model->salaOcupada($idSala)) {
+            return $response->json(['message' => 'A sala já possui um lote ativo'], 409);
+        }
+
+        if ($faseCultivo === null || !is_numeric($faseCultivo)) {
+            return $response->json(['message' => 'Fase de cultivo obrigatória e válida'], 400);
+        }
+
+        $fase = $this->faseCultivo->selectId($faseCultivo);
+        if (!$fase) {
+            return $response->json(['message' => 'Fase de cultivo não encontrada'], 404);
+        }
+
+        if ((int)$fase['idCogumelo'] !== $idCogumelo) {
+            return $response->json(['message' => 'Fase de cultivo não pertence ao cogumelo selecionado'], 400);
+        }
+
+        $idLote = $this->model->create($idSala, $idCogumelo, $dataInicio, $dataFim, $status);
+        if ($idLote <= 0) {
+            return $response->json(['message' => 'Erro ao criar lote'], 500);
+        }
+
+
+        $this->parametroModel->create(
+            $idLote,
+            $fase['umidadeMin'],
+            $fase['umidadeMax'],
+            $fase['temperaturaMin'],
+            $fase['temperaturaMax'],
+            $fase['co2Max'],
+            $fase['luz']
+        );
+
+        $this->historicoFase->create($idLote, $faseCultivo);
+
+
+        return $response->json([
+            'message' => 'Lote criado com sucesso',
+            'idLote'  => $idLote
+        ], 201);
+
+      
     }
-
-    if ($faseCultivo === null || !is_numeric($faseCultivo)) {
-        return $response->json(['message' => 'Fase de cultivo obrigatória e válida'], 400);
-    }
-
-    // 🔹 Criar o lote (já cria config + histórico dentro do Model)
-    $novoId = $this->model->create($idSala, $idCogumelo, $dataInicio, $dataFim, $status, (int)$faseCultivo);
-
-    if ($novoId <= 0) {
-        return $response->json(['message' => 'Erro ao criar lote'], 500);
-    }
-
-    return $response->json([
-        'message' => 'Lote criado com sucesso',
-        'idLote'  => $novoId
-    ], 201);
-}
 
     function alterar(Request $request, Response $response, array $url)
     {
@@ -265,7 +312,7 @@ function adicionar(Request $request, Response $response, array $url)
         return $response->json(['message' => 'Lote já estava finalizado ou não pôde ser alterado'], 400);
     }
 
-        function deletar_fisico(Request $request, Response $response, array $url)
+    function deletar_fisico(Request $request, Response $response, array $url)
     {
         if (!isset($url[0]) || !is_numeric($url[0])) {
             return $response->json(['message' => 'Uso correto: DELETE /lote/{idLote}'], 400);

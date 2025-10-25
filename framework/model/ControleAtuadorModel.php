@@ -51,19 +51,33 @@ class ControleAtuadorModel
 
     public function selectByIdAtuador(int $idAtuador): array
     {
-        $sql = $this->baseSelect() . ' WHERE ca.idAtuador = ? ORDER BY ca.dataCriacao DESC, ca.idControle DESC';
+        $sql = $this->baseSelect() . ' WHERE ca.idAtuador = ? ORDER BY ca.dataCriacao DESC, ca.idControle DESC LIMIT 1';
         $stmt = $this->conexao->prepare($sql);
         $stmt->execute([$idAtuador]);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
-    public function selectByIdLote(int $idLote): array
+    public function selectLatestStatusByLote(int $idLote): array
     {
-        $sql = $this->baseSelect() . ' WHERE ca.idLote = ? ORDER BY ca.dataCriacao DESC, ca.idControle DESC';
-        $stmt = $this->conexao->prepare($sql);
-        $stmt->execute([$idLote]);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $sql = "
+      SELECT t.idControle, t.idAtuador, a.nomeAtuador, a.tipoAtuador,
+             t.idLote, t.statusAtuador, t.dataCriacao
+      FROM (
+        SELECT ca.*,
+               ROW_NUMBER() OVER(PARTITION BY ca.idAtuador
+                                 ORDER BY ca.dataCriacao DESC, ca.idControle DESC) rn
+        FROM controle_atuador ca
+        WHERE ca.idLote = :idLote
+      ) t
+      JOIN atuador a ON a.idAtuador = t.idAtuador
+      WHERE t.rn = 1
+      ORDER BY t.idAtuador;
+    ";
+        $st = $this->conexao->prepare($sql);
+        $st->execute([':idLote' => $idLote]);
+        return $st->fetchAll(PDO::FETCH_ASSOC);
     }
+
 
     public function create(int $idAtuador, int $idLote, string $statusAtuador): int
     {
@@ -75,7 +89,7 @@ class ControleAtuadorModel
         return ($stmt->rowCount() > 0) ? (int)$this->conexao->lastInsertId() : 0;
     }
 
-        /**
+    /**
      * Atualiza todos os registros do atuador definindo o status informado.
      * Filtra por sala via JOIN com a tabela lote (ca.idLote = l.idLote).
      * Ex: UPDATE controle_atuador ca
@@ -83,22 +97,22 @@ class ControleAtuadorModel
      *      SET ca.statusAtuador = ?
      *      WHERE ca.idAtuador = ? AND l.idSala = ?
      */
-    public function updateStatusByAtuador(int $idAtuador, string $statusAtuador): bool
-    {
-        $sql = 'UPDATE controle_atuador SET statusAtuador = ?
-                 WHERE idAtuador = ?';
-        $st = $this->conexao->prepare($sql);
-        $st->execute([$statusAtuador, $idAtuador]);
-        return ($st->rowCount() > 0);
-    }
+    // public function updateStatusByAtuador(int $idAtuador, string $statusAtuador): bool
+    // {
+    //     $sql = 'UPDATE controle_atuador SET statusAtuador = ?
+    //              WHERE idAtuador = ?';
+    //     $st = $this->conexao->prepare($sql);
+    //     $st->execute([$statusAtuador, $idAtuador]);
+    //     return ($st->rowCount() > 0);
+    // }
 
-    /**
-     * Mesma semântica de updateStatusByAtuador — compatibilidade com controller.
-     */
-    public function updateStatus(int $idAtuador, string $statusAtuador): bool
-    {
-        return $this->updateStatusByAtuador($idAtuador, $statusAtuador);
-    }
+    // /**
+    //  * Mesma semântica de updateStatusByAtuador — compatibilidade com controller.
+    //  */
+    // public function updateStatus(int $idAtuador, string $statusAtuador): bool
+    // {
+    //     return $this->updateStatusByAtuador($idAtuador, $statusAtuador);
+    // }
 
     /**
      * Exclusão lógica: atualiza o status para 'inativo'.

@@ -8,7 +8,7 @@ Http::get('/sala/listarIdSala/{idSala}',                                    'Sal
 Http::get('/sala/listarSalasComLotesAtivos',                                'SalaController@listarSalasComLotesAtivos');
 Http::post('/sala/adicionar',                                               'SalaController@adicionar');
 Http::put('/sala/alterar',                                                  'SalaController@alterar');
-Http::delete('/sala/deletar/{idLote}',                                      'SalaController@deletar');
+Http::delete('/sala/deletar/{idSala}',                                      'SalaController@deletar');
 
 
 //coguemlo
@@ -16,16 +16,16 @@ Http::get('/cogumelo/listarTodos',                                          'Cog
 Http::get('/cogumelo/listarIdCogumelo/{idCogumelo}',                        'CogumeloController@listarIdCogumelo');
 Http::post('/cogumelo/adicionar',                                           'CogumeloController@adicionar');
 Http::put('/cogumelo/alterar',                                              'CogumeloController@alterar');
-Http::delete('/cogumelo/deletar/{idLote}',                                  'CogumeloController@deletar');
+Http::delete('/cogumelo/deletar/{idCogumelo}',                              'CogumeloController@deletar');
 
 
 //fase_cultivo
 Http::get('/faseCultivo/listarTodos',                                       'FaseCultivoController@listarTodos');
-Http::get('/faseCultivo/listarIdFaseCultivo/{idCultivo}',                   'FaseCultivoController@listarIdFaseCultivo');
+Http::get('/faseCultivo/listarIdFaseCultivo/{idFaseCultivo}',               'FaseCultivoController@listarIdFaseCultivo');
 Http::get('/faseCultivo/listarPorCogumelo/{idCogumelo}',                    'FaseCultivoController@listarPorCogumelo');
 Http::post('/faseCultivo/adicionar',                                        'FaseCultivoController@adicionar');
 Http::put('/faseCultivo/alterar',                                           'FaseCultivoController@alterar');
-Http::delete('/faseCultivo/deletar/{idLote}',                               'FaseCultivoController@deletar');
+Http::delete('/faseCultivo/deletar/{idFaseCultivo}',                        'FaseCultivoController@deletar');
 
 
 //lote
@@ -33,6 +33,7 @@ Http::get('/lote/listarTodos',                                              'Lot
 Http::get('/lote/listarAtivos',                                             'LoteController@listarAtivos');
 Http::get('/lote/listarIdLote/{idLote}',                                    'LoteController@listarIdLote');
 Http::get('/lote/listarSalasDisponiveis',                                   'LoteController@listarSalasDisponiveis');
+Http::get('/lote/listarIdSala/{idSala}',                                    'LoteController@listarIdSala');
 Http::post('/lote/adicionar',                                               'LoteController@adicionar');
 Http::put('/lote/alterar',                                                  'LoteController@alterar');
 Http::delete('/lote/deletar/{idLote}',                                      'LoteController@deletar');
@@ -49,12 +50,13 @@ Http::put('/historico_fase/alterar',                                        'His
 Http::delete('/historico_fase/deletar/{idHistorico}',                       'HistoricoFaseController@deletar');
 
 //leitura
-Http::get('/leitura/listarTodos',                                           'leituraController@listarTodos');
-Http::get('/leitura/listarIdLeitura/{idLeitura}',                           'leituraController@listarIdLeitura');
-Http::get('/leitura/listarIdLote/{idLote}',                                 'leituraController@listarIdLote');
-Http::post('/leitura/adicionar',                                            'leituraController@adicionar');
+Http::get('/leitura/listarTodos',                                           'LeituraController@listarTodos');
+Http::get('/leitura/listarIdLeitura/{idLeitura}',                           'LeituraController@listarIdLeitura');
+Http::get('/leitura/listarIdLote/{idLote}',                                 'LeituraController@listarIdLote');
+Http::get('/leitura/listarUltimaLeitura/{idLote}',                          'LeituraController@listarUltimaLeitura');
+Http::post('/leitura/adicionar',                                            'LeituraController@adicionar');
 //leitura nao precisa de update
-Http::delete('/leitura/deletar/{idLeitura}',                                'leituraController@deletar');
+Http::delete('/leitura/deletar/{idLeitura}',                                'LeituraController@deletar');
 
 //usuario
 
@@ -76,7 +78,7 @@ Http::get('/atuador/listarTodos',                                           'Atu
 Http::get('/atuador/listarIdAtuador/{idAtuador}',                           'AtuadorController@listarIdAtuador');
 Http::get('/atuador/listarIdSala/{idSala}',                                 'AtuadorController@listarIdSala');
 Http::post('/atuador/adicionar',                                            'AtuadorController@adicionar');
-Http::post('/atuador/alterar',                                               'AtuadorController@alterar');
+Http::put('/atuador/alterar',                                               'AtuadorController@alterar');
 Http::delete('/atuador/deletar/{idAtuador}',                                'AtuadorController@deletar');
 
 
@@ -86,7 +88,7 @@ Http::get('/controleAtuador/listarIdControle/{idControle}',                 'Con
 Http::get('/controleAtuador/listarIdAtuador/{idAtuador}',                   'ControleAtuadorController@listarIdAtuador');
 Http::get('/controleAtuador/listarIdLote/{idLote}',                         'ControleAtuadorController@listarIdLote');
 Http::post('/controleAtuador/adicionar',                                    'ControleAtuadorController@adicionar');
-Http::post('/controleAtuador/alterar',                                    'ControleAtuadorController@alterar');
+//Http::post('/controleAtuador/alterar',                                    'ControleAtuadorController@alterar'); //Controle atuador não precisa de update e o vorbo está errado.
 //controle_atuador nao precisa de update
 Http::delete('/controleAtuador/deletar/{idControle}',                       'ControleAtuadorController@deletarLogico');
 Http::delete('/controleAtuador/deletarFisico/{idControle}',                 'ControleAtuadorController@deletarFisico');

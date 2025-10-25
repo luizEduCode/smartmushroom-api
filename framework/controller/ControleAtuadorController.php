@@ -1,13 +1,5 @@
 <?php
 
-// TODO: Refatorar:
-/*
-Tarefas:
-Ajustar Querry da ControleAtuadorModel e retirar informaçoes desnecessárias.
-Criar um select por idcontrole com a ultima informação adicionada a tabela.
- - como precisamos do istórico de alteraçoes o front receberá sempre o ultimo dado com a informação de ativo ou inativo.
- 
-*/
 
 require_once './model/ControleAtuadorModel.php';
 require_once './model/AtuadorModel.php';
@@ -68,15 +60,21 @@ class ControleAtuadorController
     public function listarIdLote(Request $request, Response $response, array $url)
     {
         if (!isset($url[0]) || !is_numeric($url[0]) || (int)$url[0] <= 0) {
-            return $response->json(['message' => 'Uso correto: GET /controleAtuador/listarIdLote/{idLote}'], 400);
+            return $response->json(['message' => 'Uso: GET /controleAtuador/statusLote/{idLote}'], 400);
         }
-
         $idLote = (int)$url[0];
-        $dados = $this->model->selectByIdLote($idLote);
 
-        if (empty($dados)) {
-            return $response->json(['message' => 'Nenhum controle de atuador encontrado para este lote'], 200);
+        $lote = $this->loteModel->selectId((int)$idLote);
+        if ($lote === null) {
+            return $response->json(['message' => 'Lote não encontrado'], 404);
         }
+        $statusLote = strtolower(trim($lote['status'] ?? ''));
+        $dataFim = $lote['dataFim'] ?? null;
+        if ($statusLote === 'finalizado' || ($dataFim !== null && $dataFim !== '')) {
+            return $response->json(['message' => 'Lote finalizado'], 409);
+        }
+
+        $dados = $this->model->selectLatestStatusByLote($idLote);
         return $response->json($dados, 200);
     }
 
@@ -141,91 +139,91 @@ class ControleAtuadorController
         return $response->json(['message' => 'Erro ao adicionar controle de atuador'], 500);
     }
 
-// public function alterar(Request $request, Response $response, array $url) 
-// {
-//     // $request->body() já retorna array, então não precisa de json_decode
-//     $data = $request->body();
+    // public function alterar(Request $request, Response $response, array $url) 
+    // {
+    //     // $request->body() já retorna array, então não precisa de json_decode
+    //     $data = $request->body();
 
-//     if (empty($data) || !is_array($data)) {
-//         return $response->json(['message' => 'Body não recebido ou inválido'], 400);
-//     }
+    //     if (empty($data) || !is_array($data)) {
+    //         return $response->json(['message' => 'Body não recebido ou inválido'], 400);
+    //     }
 
-//     $idAtuador     = $data['idAtuador'] ?? null;
-//     $statusAtuador = isset($data['statusAtuador']) ? strtolower(trim($data['statusAtuador'])) : null;
+    //     $idAtuador     = $data['idAtuador'] ?? null;
+    //     $statusAtuador = isset($data['statusAtuador']) ? strtolower(trim($data['statusAtuador'])) : null;
 
-//     if (!is_numeric($idAtuador) || (int)$idAtuador <= 0 || !self::validarStatusAtuador($statusAtuador)) {
-//         return $response->json([
-//             'message' => 'Parâmetros inválidos: idAtuador e statusAtuador (ativo|inativo) são obrigatórios'
-//         ], 400);
-//     }
+    //     if (!is_numeric($idAtuador) || (int)$idAtuador <= 0 || !self::validarStatusAtuador($statusAtuador)) {
+    //         return $response->json([
+    //             'message' => 'Parâmetros inválidos: idAtuador e statusAtuador (ativo|inativo) são obrigatórios'
+    //         ], 400);
+    //     }
 
-//     $idAtuador = (int)$idAtuador;
+    //     $idAtuador = (int)$idAtuador;
 
-//     if ($this->atuadorModel->selectIdAtuador($idAtuador) === null) {
-//         return $response->json(['message' => 'Atuador não encontrado'], 404);
-//     }
+    //     if ($this->atuadorModel->selectIdAtuador($idAtuador) === null) {
+    //         return $response->json(['message' => 'Atuador não encontrado'], 404);
+    //     }
 
-//     $controles = $this->model->selectByIdAtuador($idAtuador);
-//     if (empty($controles)) {
-//         return $response->json(['message' => 'Controle de Atuador não encontrado para este atuador'], 404);
-//     }
+    //     $controles = $this->model->selectByIdAtuador($idAtuador);
+    //     if (empty($controles)) {
+    //         return $response->json(['message' => 'Controle de Atuador não encontrado para este atuador'], 404);
+    //     }
 
-//     $ok = $this->model->updateStatusByAtuador($idAtuador, $statusAtuador);
+    //     $ok = $this->model->updateStatusByAtuador($idAtuador, $statusAtuador);
 
-//     if ($ok) {
-//         $atualizados = $this->model->selectByIdAtuador($idAtuador);
-//         return $response->json([
-//             'message' => 'Status do atuador atualizado',
-//             'controles' => $atualizados
-//         ], 200);
-//     }
+    //     if ($ok) {
+    //         $atualizados = $this->model->selectByIdAtuador($idAtuador);
+    //         return $response->json([
+    //             'message' => 'Status do atuador atualizado',
+    //             'controles' => $atualizados
+    //         ], 200);
+    //     }
 
-//     return $response->json(['message' => 'Erro ao atualizar status do atuador'], 500);
-// }
+    //     return $response->json(['message' => 'Erro ao atualizar status do atuador'], 500);
+    // }
 
-public function alterar(Request $request, Response $response, array $url) 
-{
-    // Lê o JSON cru do POST
-    $json = file_get_contents('php://input');
+    // public function alterar(Request $request, Response $response, array $url) 
+    // {
+    //     // Lê o JSON cru do POST
+    //     $json = file_get_contents('php://input');
 
-    if (empty($json)) {
-        return $response->json(['message' => 'Body não recebido'], 400);
-    }
+    //     if (empty($json)) {
+    //         return $response->json(['message' => 'Body não recebido'], 400);
+    //     }
 
-    $data = json_decode($json, true); // true retorna array associativo
+    //     $data = json_decode($json, true); // true retorna array associativo
 
-    if (empty($data)) {
-        return $response->json(['message' => 'Body não recebido ou JSON inválido'], 400);
-    }
+    //     if (empty($data)) {
+    //         return $response->json(['message' => 'Body não recebido ou JSON inválido'], 400);
+    //     }
 
-    $idAtuador     = $data['idAtuador'] ?? null;
-    $statusAtuador = isset($data['statusAtuador']) ? strtolower(trim($data['statusAtuador'])) : null;
+    //     $idAtuador     = $data['idAtuador'] ?? null;
+    //     $statusAtuador = isset($data['statusAtuador']) ? strtolower(trim($data['statusAtuador'])) : null;
 
-    if (!is_numeric($idAtuador) || (int)$idAtuador <= 0 || !self::validarStatusAtuador($statusAtuador)) {
-        return $response->json(['message' => 'Parâmetros inválidos: idAtuador e statusAtuador (ativo|inativo) são obrigatórios'], 400);
-    }
+    //     if (!is_numeric($idAtuador) || (int)$idAtuador <= 0 || !self::validarStatusAtuador($statusAtuador)) {
+    //         return $response->json(['message' => 'Parâmetros inválidos: idAtuador e statusAtuador (ativo|inativo) são obrigatórios'], 400);
+    //     }
 
-    // Verifica se o atuador existe
-    if ($this->atuadorModel->selectIdAtuador((int)$idAtuador) === null) {
-        return $response->json(['message' => 'Atuador não encontrado'], 404);
-    }
+    //     // Verifica se o atuador existe
+    //     if ($this->atuadorModel->selectIdAtuador((int)$idAtuador) === null) {
+    //         return $response->json(['message' => 'Atuador não encontrado'], 404);
+    //     }
 
-    // Verifica se há pelo menos um controle para esse atuador
-    $controles = $this->model->selectByIdAtuador((int)$idAtuador);
-    if (empty($controles)) {
-        return $response->json(['message' => 'Controle de Atuador não encontrado para este atuador'], 404);
-    }
+    //     // Verifica se há pelo menos um controle para esse atuador
+    //     $controles = $this->model->selectByIdAtuador((int)$idAtuador);
+    //     if (empty($controles)) {
+    //         return $response->json(['message' => 'Controle de Atuador não encontrado para este atuador'], 404);
+    //     }
 
-    // Atualiza o status
-    $ok = $this->model->updateStatusByAtuador((int)$idAtuador, $statusAtuador);
+    //     // Atualiza o status
+    //     $ok = $this->model->updateStatusByAtuador((int)$idAtuador, $statusAtuador);
 
-    if ($ok) {
-        $atualizados = $this->model->selectByIdAtuador((int)$idAtuador);
-        return $response->json(['message' => 'Status do atuador atualizado', 'controles' => $atualizados], 200);
-    }
+    //     if ($ok) {
+    //         $atualizados = $this->model->selectByIdAtuador((int)$idAtuador);
+    //         return $response->json(['message' => 'Status do atuador atualizado', 'controles' => $atualizados], 200);
+    //     }
 
-    return $response->json(['message' => 'Erro ao atualizar status do atuador'], 500);
-}
+    //     return $response->json(['message' => 'Erro ao atualizar status do atuador'], 500);
+    // }
 
 
 
@@ -309,11 +307,11 @@ public function alterar(Request $request, Response $response, array $url)
 
     /* ===================== helpers ===================== */
 
-private static function validarStatusAtuador(?string $status): bool
-{
-    if (!is_string($status) || $status === '') {
-        return false;
+    private static function validarStatusAtuador(?string $status): bool
+    {
+        if (!is_string($status) || $status === '') {
+            return false;
+        }
+        return in_array($status, ['ativo', 'inativo'], true);
     }
-    return in_array($status, ['ativo', 'inativo'], true);
-}
 }

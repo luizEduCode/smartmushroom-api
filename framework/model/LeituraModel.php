@@ -52,6 +52,16 @@ class LeituraModel
         return $st->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    public function selectLastByIdLote(int $idLote): array
+    {
+        $sql = $this->baseSelect() . ' WHERE le.idLote = ?
+                ORDER BY le.dataCriacao DESC, le.idLeitura DESC
+                LIMIT 1';
+        $st  = $this->conexao->prepare($sql);
+        $st->execute([$idLote]);
+        return $st->fetchAll(PDO::FETCH_ASSOC);    
+    }
+
     public function create(int $idLote, float $umidade, float $temperatura, float $co2, string $luz = 'ligado'): int
     {
         $sql = 'INSERT INTO leitura (idLote, umidade, temperatura, co2, luz)

@@ -93,89 +93,41 @@ class LoteModel
 
     public function selectSalasSemLoteAtivo(): array
     {
-        $sql = "
-        SELECT s.idSala, s.nomeSala, s.descricaoSala, s.dataCriacao
-        FROM sala s
-        LEFT JOIN lote l
-          ON l.idSala = s.idSala
-         AND l.status = 'ativo'
-        WHERE l.idLote IS NULL
-        ORDER BY s.idSala
-    ";
-        $st = $this->conexao->query($sql);
-        return $st->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        $sql = " SELECT s.idSala, s.nomeSala, s.descricaoSala, s.dataCriacao
+                    FROM sala s
+                    LEFT JOIN lote l
+                    ON l.idSala = s.idSala
+                    AND l.status = 'ativo'
+                    WHERE l.idLote IS NULL
+                    ORDER BY s.idSala";
+        $stmt = $this->conexao->query($sql);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
     }
 
-    public function create(
-    int $idSala, 
-    int $idCogumelo, 
-    string $dataInicio, 
-    ?string $dataFim, 
-    string $status, 
-    int $idFaseCultivo
-): int {
-    try {
-        $this->conexao->beginTransaction();
+    public function selectLotePorSala(int $idSala)
+    {
+        $sql = "SELECT 
+                    l.idLote,
+                    l.idSala
+                FROM 
+                    lote l
+                WHERE l.idSala = ? AND l.status = 'ativo'";
 
-        // 1. Criar lote
+        $stmt = $this->conexao->prepare($sql);
+        $stmt->execute([$idSala]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $row === false ? null : $row;
+    }
+
+    public function create(int $idSala, int $idCogumelo, string $dataInicio, ?string $dataFim, string $status): int
+    {
         $sql = 'INSERT INTO lote (idSala, idCogumelo, dataInicio, dataFim, status)
-                VALUES (?, ?, ?, ?, ?)';
+            VALUES (?, ?, ?, ?, ?)';
         $stmt = $this->conexao->prepare($sql);
         $stmt->execute([$idSala, $idCogumelo, $dataInicio, $dataFim, $status]);
 
-        $idLote = (int)$this->conexao->lastInsertId();
-
-        if ($idLote <= 0) {
-            $this->conexao->rollBack();
-            return 0;
-        }
-
-        // 2. Buscar parâmetros da fase de cultivo
-        $sqlFase = 'SELECT 
-                        temperaturaMin, 
-                        temperaturaMax, 
-                        umidadeMin, 
-                        umidadeMax, 
-                        co2Max
-                    FROM fase_cultivo 
-                    WHERE idFaseCultivo = ?';
-        $stmtFase = $this->conexao->prepare($sqlFase);
-        $stmtFase->execute([$idFaseCultivo]);
-        $fase = $stmtFase->fetch(PDO::FETCH_ASSOC);
-
-        if (!$fase) {
-            $this->conexao->rollBack();
-            return 0;
-        }
-
-        // 3. Inserir configuração vinculada ao lote
-        $sqlConfig = 'INSERT INTO configuracao 
-                        (idLote, temperaturaMin, temperaturaMax, umidadeMin, umidadeMax, co2Max) 
-                      VALUES (?, ?, ?, ?, ?, ?)';
-        $stmtConfig = $this->conexao->prepare($sqlConfig);
-        $stmtConfig->execute([
-            $idLote,
-            $fase['temperaturaMin'],
-            $fase['temperaturaMax'],
-            $fase['umidadeMin'],
-            $fase['umidadeMax'],
-            $fase['co2Max']
-        ]);
-
-        // 4. Registrar fase inicial no histórico
-        $sqlHist = 'INSERT INTO historico_fase (idLote, idFaseCultivo) VALUES (?, ?)';
-        $stmtHist = $this->conexao->prepare($sqlHist);
-        $stmtHist->execute([$idLote, $idFaseCultivo]);
-
-        $this->conexao->commit();
-
-        return $idLote;
-
-    } catch (\Exception $e) {
-        $this->conexao->rollBack();
-        throw $e;
+        return (int)$this->conexao->lastInsertId();
     }
-}
 
 
     public function update(int $idLote, int $idSala, int $idCogumelo, string $dataInicio, ?string $dataFim, string $status): bool
@@ -202,18 +154,17 @@ class LoteModel
         return ($st->rowCount() > 0);
     }
 
-public function finalizar_fisico(int $idLote): bool
-{
-    try {
-        $sql = "DELETE FROM lote WHERE idLote = ?";
-        $st = $this->conexao->prepare($sql);
-        $st->execute([$idLote]);
-        return ($st->rowCount() > 0);
-        
-    } catch (PDOException $e) {
-        // Log do erro (opcional)
-        error_log("Erro ao excluir lote {$idLote}: " . $e->getMessage());
-        throw $e; // Re-lança a exceção para tratamento na controller
+    public function finalizar_fisico(int $idLote): bool
+    {
+        try {
+            $sql = "DELETE FROM lote WHERE idLote = ?";
+            $st = $this->conexao->prepare($sql);
+            $st->execute([$idLote]);
+            return ($st->rowCount() > 0);
+        } catch (PDOException $e) {
+            // Log do erro (opcional)
+            error_log("Erro ao excluir lote {$idLote}: " . $e->getMessage());
+            throw $e; // Re-lança a exceção para tratamento na controller
+        }
     }
-}
 }

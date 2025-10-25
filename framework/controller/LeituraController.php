@@ -47,6 +47,20 @@ class LeituraController
         return $response->json($dados, 200);
     }
 
+    public function listarUltimaLeitura(Request $request, Response $response, array $url)
+    {
+        if (!isset($url[0]) || !is_numeric($url[0]) || (int)$url[0] <= 0) {
+            return $response->json(['message' => 'Uso correto: GET /leitura/listarIdLote/{idLote}'], 400);
+        }
+
+        $idLote = (int)$url[0];
+        $dados  = $this->model->selectLastByIdLote($idLote);
+        if (empty($dados)) {
+            return $response->json(['message' => 'Sem leituras para este lote'], 200);
+        }
+        return $response->json($dados, 200);
+    }
+
     public function adicionar(Request $request, Response $response, array $url)
     {
         $data = $request->body();
