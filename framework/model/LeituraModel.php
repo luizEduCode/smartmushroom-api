@@ -59,7 +59,7 @@ class LeituraModel
                 LIMIT 1';
         $st  = $this->conexao->prepare($sql);
         $st->execute([$idLote]);
-        return $st->fetchAll(PDO::FETCH_ASSOC);    
+        return $st->fetchAll(PDO::FETCH_ASSOC);
     }
 
     public function create(int $idLote, float $umidade, float $temperatura, float $co2, string $luz = 'ligado'): int
@@ -87,5 +87,47 @@ class LeituraModel
         $st  = $this->conexao->prepare($sql);
         $st->execute([$idLeitura]);
         return $st->rowCount() > 0;
+    }
+
+    public function getAggregatedData(int $idLote, string $metric, string $aggregation, string $startDate, string $endDate): array
+    {
+        $allowedMetrics = ['umidade', 'temperatura', 'co2'];
+        if (!in_array($metric, $allowedMetrics)) {
+            return [];
+        }
+
+        $selectField = $metric;
+
+        $groupBy = '';
+        $dateFormatFunction = ''; // Variável para a função de formatação SQL
+
+        if ($aggregation === 'daily') {
+            $dateFormatFunction = 'DATE_FORMAT(le.dataCriacao, \'%Y-%m-%d\')'; // CORREÇÃO AQUI
+            $groupBy = 'aggregation_key'; // Agrupar pelo alias
+        } elseif ($aggregation === 'weekly') {
+            // Para "weekly", queremos o início da semana (segunda-feira) como 'x'
+            // MySQL: SUBDATE(DATE_FORMAT(le.dataCriacao, '%Y-%m-%d'), WEEKDAY(le.dataCriacao))
+            // WEEKDAY() retorna 0 para segunda-feira, 1 para terça e assim por diante
+            $dateFormatFunction = 'SUBDATE(DATE(le.dataCriacao), WEEKDAY(le.dataCriacao))'; // CORREÇÃO AQUI
+            $groupBy = 'aggregation_key'; // Agrupar pelo alias
+        } else {
+            return [];
+        }
+
+        $sql = "SELECT
+                    $dateFormatFunction AS aggregation_key,
+                    AVG(le.$selectField) AS average_value
+                FROM leitura le
+                INNER JOIN lote l ON l.idLote = le.idLote
+                WHERE le.idLote = ?
+                  AND le.dataCriacao BETWEEN ? AND DATE_ADD(?, INTERVAL 1 DAY) -- Usar DATE_ADD para melhor compatibilidade
+                GROUP BY $groupBy
+                ORDER BY aggregation_key ASC";
+
+        $stmt = $this->conexao->prepare($sql);
+        // Os parâmetros são idLote, startDate, endDate.
+        // O endDate aqui precisa ser o endDate original, pois DATE_ADD vai adicioná-lo.
+        $stmt->execute([$idLote, $startDate, $endDate]); // $endDate já será incrementado por DATE_ADD
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 }

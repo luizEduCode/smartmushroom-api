@@ -58,6 +58,9 @@ Http::post('/leitura/adicionar',                                            'Lei
 //leitura nao precisa de update
 Http::delete('/leitura/deletar/{idLeitura}',                                'LeituraController@deletar');
 
+//endpoint para gráficos - verificar a necessidade de abristrair para uma controller própria 
+Http::get('/leitura/grafico/{idLote}',                                     'LeituraController@gerarGrafico');
+
 //usuario
 
 
