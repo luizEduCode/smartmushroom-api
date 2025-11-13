@@ -188,8 +188,7 @@ class LoteController
             $fase['umidadeMax'],
             $fase['temperaturaMin'],
             $fase['temperaturaMax'],
-            $fase['co2Max'],
-            $fase['luz']
+            $fase['co2Max']
         );
 
         $this->historicoFase->create($idLote, $faseCultivo);
@@ -199,8 +198,6 @@ class LoteController
             'message' => 'Lote criado com sucesso',
             'idLote'  => $idLote
         ], 201);
-
-      
     }
 
     function alterar(Request $request, Response $response, array $url)
