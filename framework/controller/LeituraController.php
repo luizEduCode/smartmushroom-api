@@ -177,8 +177,12 @@ class LeituraController
         $queryParams = $request->body();
 
         $aggregation = strtolower($queryParams['aggregation'] ?? 'daily');
-        if (!in_array($aggregation, ['daily', 'weekly'])) {
-            return $response->json(['message' => 'Parâmetro aggregation inválido. Use "daily" ou "weekly".'], 400);
+        if ($aggregation === 'hourly') {
+            $aggregation = '24h';
+        }
+        $allowedAggregations = ['daily', 'weekly', 'monthly', '24h'];
+        if (!in_array($aggregation, $allowedAggregations, true)) {
+            return $response->json(['message' => 'Parâmetro aggregation inválido. Use "daily", "weekly", "monthly" ou "24h".'], 400);
         }
 
         $metric = strtolower($queryParams['metric'] ?? 'temperatura');
@@ -189,38 +193,66 @@ class LeituraController
 
         $startDateStr = $queryParams['start_date'] ?? null;
         $endDateStr = $queryParams['end_date'] ?? null;
+        $datesProvided = ($startDateStr && $endDateStr);
 
         // 4. Definir datas padrão se não forem fornecidas
         $now = new DateTime();
         $startDate = null;
         $endDate = null;
 
-        if ($startDateStr && $endDateStr) {
+        if ($datesProvided) {
             try {
                 $startDate = new DateTime($startDateStr);
                 $endDate = new DateTime($endDateStr);
             } catch (Exception $e) {
-                return $response->json(['message' => 'Formato de data inválido. Use YYYY-MM-DD.'], 400);
+                return $response->json(['message' => 'Formato de data inválido. Use YYYY-MM-DD ou YYYY-MM-DD HH:MM:SS.'], 400);
             }
         } else {
-            // Datas padrão
-            if ($aggregation === 'daily') {
-                $endDate = clone $now;
-                $startDate = (clone $now)->modify('-7 days');
-            } elseif ($aggregation === 'weekly') {
-                $endDate = clone $now;
-                // Ajustar end_date para o final da semana atual ou para o último domingo/sábado
-                // Para consistência, vamos ajustar start/end para o início da semana.
-                // Se hoje é quarta, a semana termina domingo. Se quisermos 8 semanas completas,
-                // precisamos ir mais para trás.
-                // Para simplificar, vamos pegar 8 semanas para trás do dia atual.
-                $startDate = (clone $now)->modify('-8 weeks');
+            switch ($aggregation) {
+                case 'daily':
+                    $endDate = clone $now;
+                    $startDate = (clone $now)->modify('-7 days');
+                    break;
+                case 'weekly':
+                    $endDate = clone $now;
+                    $startDate = (clone $now)->modify('-8 weeks');
+                    break;
+                case 'monthly':
+                    $endDate = clone $now;
+                    $startDate = (clone $now)->modify('-5 months');
+                    break;
+                case '24h':
+                    $endDate = clone $now;
+                    $startDate = (clone $now)->modify('-24 hours');
+                    break;
             }
         }
 
+        if (!$datesProvided) {
+            if (in_array($aggregation, ['daily', 'weekly'], true)) {
+                $startDate->setTime(0, 0, 0);
+                $endDate->setTime(23, 59, 59);
+            } elseif ($aggregation === 'monthly') {
+                $startDate->modify('first day of this month')->setTime(0, 0, 0);
+                $endDate->modify('last day of this month')->setTime(23, 59, 59);
+            } elseif ($aggregation === '24h') {
+                $startDate->setTime((int)$startDate->format('H'), 0, 0);
+                $endDate->setTime((int)$endDate->format('H'), 59, 59);
+            }
+        } else {
+            if (in_array($aggregation, ['daily', 'weekly', 'monthly'], true)) {
+                $startDate->setTime(0, 0, 0);
+                $endDate->setTime(23, 59, 59);
+            }
+        }
+
+        if ($startDate > $endDate) {
+            return $response->json(['message' => 'start_date deve ser anterior a end_date.'], 400);
+        }
+
         // Formato para o Model
-        $modelStartDate = $startDate->format('Y-m-d');
-        $modelEndDate = $endDate->format('Y-m-d');
+        $modelStartDate = $startDate->format('Y-m-d H:i:s');
+        $modelEndDate = $endDate->format('Y-m-d H:i:s');
 
         // 5. Chamar o Model para obter os dados agregados
         $rawData = $this->model->getAggregatedData($idLote, $metric, $aggregation, $modelStartDate, $modelEndDate);
@@ -229,19 +261,21 @@ class LeituraController
         $formattedData = [];
         $title = '';
         $xAxisLabel = '';
-        $yAxisLabel = '';
+        $metricTitle = $metric === 'co2' ? 'CO2' : ucfirst($metric);
+        $yAxisLabel = $metricTitle . ' (°C)';
+        if ($metric === 'umidade') {
+            $yAxisLabel = 'Umidade (%)';
+        } elseif ($metric === 'co2') {
+            $yAxisLabel = 'CO2 (ppm)';
+        }
 
         if ($aggregation === 'daily') {
             $xAxisLabel = 'Dia';
-            $yAxisLabel = ucfirst($metric) . ' (°C)'; // Assumindo °C para temperatura, ajustar para outros
-            if ($metric === 'umidade') $yAxisLabel = 'Umidade (%)';
-            if ($metric === 'co2') $yAxisLabel = 'CO2 (ppm)';
-
-            $title = ucfirst($metric) . ' Diária - ';
-            if ($startDateStr && $endDateStr) {
+            $title = $metricTitle . ' Diária - ';
+            if ($datesProvided) {
                 $title .= $startDate->format('d/m/Y') . ' a ' . $endDate->format('d/m/Y');
             } else {
-                $title .= 'Últimos 7 Dias';
+                $title .= 'Últimos 7 dias';
             }
 
             foreach ($rawData as $row) {
@@ -254,15 +288,11 @@ class LeituraController
             }
         } elseif ($aggregation === 'weekly') {
             $xAxisLabel = 'Semana';
-            $yAxisLabel = ucfirst($metric) . ' (°C)';
-            if ($metric === 'umidade') $yAxisLabel = 'Umidade (%)';
-            if ($metric === 'co2') $yAxisLabel = 'CO2 (ppm)';
-
-            $title = ucfirst($metric) . ' Semanal - ';
-            if ($startDateStr && $endDateStr) {
+            $title = $metricTitle . ' Semanal - ';
+            if ($datesProvided) {
                 $title .= $startDate->format('d/m/Y') . ' a ' . $endDate->format('d/m/Y');
             } else {
-                $title .= 'Últimas 8 Semanas';
+                $title .= 'Últimas 8 semanas';
             }
 
             foreach ($rawData as $row) {
@@ -272,6 +302,40 @@ class LeituraController
                     'x'     => $startDateOfWeek->format('Y-m-d'),
                     'y'     => round((float)$row['average_value'], 1),
                     'label' => 'Sem ' . $weekNumber
+                ];
+            }
+        } elseif ($aggregation === 'monthly') {
+            $xAxisLabel = 'Mês';
+            $title = $metricTitle . ' Mensal - ';
+            if ($datesProvided) {
+                $title .= $startDate->format('m/Y') . ' a ' . $endDate->format('m/Y');
+            } else {
+                $title .= 'Últimos 6 meses';
+            }
+
+            foreach ($rawData as $row) {
+                $monthDate = new DateTime($row['aggregation_key']);
+                $formattedData[] = [
+                    'x'     => $monthDate->format('Y-m'),
+                    'y'     => round((float)$row['average_value'], 1),
+                    'label' => $monthDate->format('M/Y')
+                ];
+            }
+        } elseif ($aggregation === '24h') {
+            $xAxisLabel = 'Hora';
+            $title = $metricTitle . ' - ';
+            if ($datesProvided) {
+                $title .= $startDate->format('d/m H\h') . ' a ' . $endDate->format('d/m H\h');
+            } else {
+                $title .= 'Últimas 24h';
+            }
+
+            foreach ($rawData as $row) {
+                $hourDate = new DateTime($row['aggregation_key']);
+                $formattedData[] = [
+                    'x'     => $hourDate->format('Y-m-d H:i:s'),
+                    'y'     => round((float)$row['average_value'], 1),
+                    'label' => $hourDate->format('H\h')
                 ];
             }
         }

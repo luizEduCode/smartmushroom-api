@@ -98,20 +98,25 @@ class LeituraModel
 
         $selectField = $metric;
 
-        $groupBy = '';
-        $dateFormatFunction = ''; // Variável para a função de formatação SQL
+        $groupBy = 'aggregation_key';
+        $dateFormatFunction = '';
 
-        if ($aggregation === 'daily') {
-            $dateFormatFunction = 'DATE_FORMAT(le.dataCriacao, \'%Y-%m-%d\')'; // CORREÇÃO AQUI
-            $groupBy = 'aggregation_key'; // Agrupar pelo alias
-        } elseif ($aggregation === 'weekly') {
-            // Para "weekly", queremos o início da semana (segunda-feira) como 'x'
-            // MySQL: SUBDATE(DATE_FORMAT(le.dataCriacao, '%Y-%m-%d'), WEEKDAY(le.dataCriacao))
-            // WEEKDAY() retorna 0 para segunda-feira, 1 para terça e assim por diante
-            $dateFormatFunction = 'SUBDATE(DATE(le.dataCriacao), WEEKDAY(le.dataCriacao))'; // CORREÇÃO AQUI
-            $groupBy = 'aggregation_key'; // Agrupar pelo alias
-        } else {
-            return [];
+        switch ($aggregation) {
+            case 'daily':
+                $dateFormatFunction = 'DATE_FORMAT(le.dataCriacao, \'%Y-%m-%d\')';
+                break;
+            case 'weekly':
+                // Para "weekly", queremos o início da semana (segunda-feira) como 'x'
+                $dateFormatFunction = 'DATE_FORMAT(SUBDATE(DATE(le.dataCriacao), WEEKDAY(le.dataCriacao)), \'%Y-%m-%d\')';
+                break;
+            case 'monthly':
+                $dateFormatFunction = 'DATE_FORMAT(le.dataCriacao, \'%Y-%m-01\')';
+                break;
+            case '24h':
+                $dateFormatFunction = 'DATE_FORMAT(le.dataCriacao, \'%Y-%m-%d %H:00:00\')';
+                break;
+            default:
+                return [];
         }
 
         $sql = "SELECT
@@ -120,14 +125,12 @@ class LeituraModel
                 FROM leitura le
                 INNER JOIN lote l ON l.idLote = le.idLote
                 WHERE le.idLote = ?
-                  AND le.dataCriacao BETWEEN ? AND DATE_ADD(?, INTERVAL 1 DAY) -- Usar DATE_ADD para melhor compatibilidade
+                  AND le.dataCriacao BETWEEN ? AND ?
                 GROUP BY $groupBy
                 ORDER BY aggregation_key ASC";
 
         $stmt = $this->conexao->prepare($sql);
-        // Os parâmetros são idLote, startDate, endDate.
-        // O endDate aqui precisa ser o endDate original, pois DATE_ADD vai adicioná-lo.
-        $stmt->execute([$idLote, $startDate, $endDate]); // $endDate já será incrementado por DATE_ADD
+        $stmt->execute([$idLote, $startDate, $endDate]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 }
