@@ -6,6 +6,7 @@ Ao criar um novo lote devemos criar também um novo histórico fase
 - Acessar a Model de histórico_fase
 - Adicionar infomação de lote e fase_cultivo a historico_fase
 */
+require_once './core/Controller.php';
 require_once './model/LoteModel.php';
 require_once './model/SalaModel.php';
 require_once './model/CogumeloModel.php';
@@ -13,7 +14,7 @@ require_once './model/FaseCultivoModel.php';
 require_once './model/HistoricoFaseModel.php';
 require_once './model/ParametroModel.php';
 
-class LoteController
+class LoteController extends Controller
 {
     private $model;
     private $salaModel;
@@ -107,6 +108,10 @@ class LoteController
 
     function adicionar(Request $request, Response $response, array $url)
     {
+        // if ($this->requireAdmin($request, $response) === null) {
+        //     return;
+        // }
+
         $data = $request->body();
         if (empty($data)) {
             return $response->json(['message' => 'Body não recebido'], 400);
@@ -287,6 +292,10 @@ class LoteController
 
     function deletar(Request $request, Response $response, array $url)
     {
+        // if ($this->requireAdmin($request, $response) === null) {
+        //     return;
+        // }
+
         if (!isset($url[0]) || !is_numeric($url[0])) {
             return $response->json(['message' => 'Uso correto: DELETE /lote/{idLote}'], 400);
         }
@@ -311,6 +320,10 @@ class LoteController
 
     function deletar_fisico(Request $request, Response $response, array $url)
     {
+        // if ($this->requireAdmin($request, $response) === null) {
+        //     return;
+        // }
+
         if (!isset($url[0]) || !is_numeric($url[0])) {
             return $response->json(['message' => 'Uso correto: DELETE /lote/{idLote}'], 400);
         }

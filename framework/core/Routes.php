@@ -63,6 +63,16 @@ Http::get('/leitura/grafico/{idLote}',                                     'Leit
 
 //usuario
 
+Http::get('/usuario/listarTodos',                                          'UsuarioController@listarTodos');
+Http::get('/usuario/listarIdUsuario/{idUsuario}',                          'UsuarioController@listarIdUsuario');
+Http::post('/usuario/adicionar',                                           'UsuarioController@adicionar');
+Http::put('/usuario/alterar',                                              'UsuarioController@alterar');
+Http::delete('/usuario/deletar/{idUsuario}',                               'UsuarioController@deletar');
+Http::post('/usuario/login',                                               'UsuarioController@login');
+
+//auth
+Http::get('/auth/validate',                                                'AuthController@validate');
+
 
 //configuracao ou parametros
 Http::get('/parametros/listarTodos',                                        'ParametroController@listarTodos');

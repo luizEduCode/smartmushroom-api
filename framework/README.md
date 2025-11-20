@@ -282,6 +282,48 @@ CRUD semelhante a Fase, porém ligado a `lote`:
   ```
 - **DELETE lógico** `/controleAtuador/deletar/{id}` (marca inativo) e **DELETE físico** `/controleAtuador/deletarFisico/{id}`.
 
+### 3.10 Usuario
+- **GET /usuario/listarTodos**: lista usuarios cadastrados com nome, email, tipo e data de criacao.
+- **GET /usuario/listarIdUsuario/{idUsuario}**: retorna um unico usuario quando o ID e valido (> 0); responde `404` caso nao exista.
+- **POST /usuario/adicionar**:
+  ```json
+  {
+    "nomeUsuario": "Administrador",
+    "email": "admin@smartmushroom.com",
+    "senha": "senhaSegura123",
+    "tipo": "admin"
+  }
+  ```
+  - Campos obrigatorios: `nomeUsuario`, `email`, `senha`.
+  - O campo `tipo` aceita `admin` ou `usuario` (padrao `usuario`).
+  - A controller valida formato de email, tamanho minimo da senha (6+) e bloqueia cadastros com email duplicado.
+  - A senha e persistida com `password_hash` (BCRYPT); o hash nunca e retornado nas respostas.
+- **PUT /usuario/alterar**:
+  ```json
+  {
+    "idUsuario": 3,
+    "nomeUsuario": "Operador",
+    "email": "operador@smartmushroom.com",
+    "tipo": "usuario",
+    "senha": "novaSenhaOpcional"
+  }
+  ```
+  - Requer `idUsuario` existente e validacoes iguais ao POST.
+  - O campo `senha` e opcional: se omitido o hash atual permanece.
+- **DELETE /usuario/deletar/{idUsuario}**: remove definitivamente o registro apos validar a existencia.
+- **POST /usuario/login**:
+  ```json
+  {
+    "email": "admin@smartmushroom.com",
+    "senha": "segredo123"
+  }
+  ```
+  - Usa `UsuarioModel::selectAuthByEmail`, valida `password_verify` e retorna token JWT + dados basicos do usuario.
+  - Payload contem `idUsuario`, `nomeUsuario` e `tipo`; expira em 1 hora.
+
+### 3.11 Autenticacao
+- **GET /auth/validate**: verifica o header `Authorization: Bearer <token>`, valida assinatura/expiracao e devolve o payload decodificado. Pode ser usado pelo front para testar sessao ou renovar tokens.
+
 ## 4. Banco de Dados
 
 ### 4.1 Diagrama ER (texto)
